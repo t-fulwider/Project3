@@ -1,0 +1,6 @@
+5
+isConnected 33 52
+toggleEdgesClosure 1 33 52
+isConnected 33 52
+toggleEdgesClosure 1 33 52
+isConnected 33 52 33

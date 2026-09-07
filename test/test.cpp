@@ -1,84 +1,174 @@
-#include <catch2/catch_test_macros.hpp>
+/*#include <catch2/catch_test_macros.hpp>
 #include <iostream>
+#include <algorithm>
 
 // change if you choose to use a different header name
 #include "CampusCompass.h"
 
 using namespace std;
 
-// the syntax for defining a test is below. It is important for the name to be
-// unique, but you can group multiple tests with [tags]. A test can have
-// [multiple][tags] using that syntax.
-TEST_CASE("Example Test Name - Change me!", "[tag]") {
-  // instantiate any class members that you need to test here
-  int one = 1;
+TEST_CASE("insert", "INCORRECT CMD") {
 
-  // anything that evaluates to false in a REQUIRE block will result in a
-  // failing test
-  REQUIRE(one == 0); // fix me!
-
-  // all REQUIRE blocks must evaluate to true for the whole test to pass
-  REQUIRE(false); // also fix me!
-}
-
-TEST_CASE("Test 2", "[tag]") {
-  // you can also use "sections" to share setup code between tests, for example:
-  int one = 1;
-
-  SECTION("num is 2") {
-    int num = one + 1;
-    REQUIRE(num == 2);
-  };
-
-  SECTION("num is 3") {
-    int num = one + 2;
-    REQUIRE(num == 3);
-  };
-
-  // each section runs the setup code independently to ensure that they don't
-  // affect each other
-}
-
-// Refer to Canvas for a list of required tests. 
-// We encourage you to write more than required to ensure proper functionality, but only the ones on Canvas will be graded.
-
-// See the following for an example of how to easily test your output.
-// Note that while this works, I recommend also creating plenty of unit tests for particular functions within your code.
-// This pattern should only be used for final, end-to-end testing.
-
-// This uses C++ "raw strings" and assumes your CampusCompass outputs a string with
-//   the same thing you print.
-TEST_CASE("Example CampusCompass Output Test", "[flag]") {
-  // the following is a "raw string" - you can write the exact input (without
-  //   any indentation!) and it should work as expected
-  // this is based on the input and output of the first public test case
-  string input = R"(6
-insert "Student A" 10000001 1 1 COP3502
-insert "Student B" 10000002 1 1 COP3502
-insert "Student C" 10000003 1 2 COP3502 MAC2311
-dropClass 10000001 COP3502
-remove 10000001
-removeClass COP3502
-)";
-
-  string expectedOutput = R"(successful
-successful
-successful
-successful
-unsuccessful
-2
-)";
-
-  string actualOutput;
-
-  // somehow pass your input into your CampusCompass and parse it to call the
-  // correct functions, for example:
-  /*
   CampusCompass c;
-  c.parseInput(input)
-  // this would be some function that sends the output from your class into a string for use in testing
-  actualOutput = c.getStringRepresentation()
-  */
 
-  REQUIRE(actualOutput == expectedOutput);
+  bool res = c.AddStudent("1234567", "Tanner", "1", {});
+  REQUIRE(!res);
+
+  res = c.AddStudent("12345678", "Tanner12", "1", {});
+  REQUIRE(!res);
+
+  res = c.AddStudent("1234567KL", "Tanner", "1", {});
+  REQUIRE(!res);
+
+  res = c.AddStudent("12345678", "Tanner", "1", {"cop3502"});
+  REQUIRE(!res);
 }
+
+TEST_CASE("drop class", "INCORRECT CMD") {
+
+  CampusCompass c;
+
+  c.AddStudent("12345678", "Tanner", "1", {});
+
+  bool res = c.DropClass("1234567", "COP3503");
+  REQUIRE(!res);
+}
+
+TEST_CASE("replace class", "INCORRECT CMD") {
+
+  CampusCompass c;
+
+  c.AddStudent("12345678", "Tanner", "1", {"COP3530"});
+
+  bool res = c.ReplaceClass("1234567A", "COP3530", "COP3503");
+  REQUIRE(!res);
+}
+
+TEST_CASE("insert edge cases", "Edge") {
+
+  CampusCompass c;
+
+  bool res = c.AddStudent("12345678", "Tanner", "1", {});
+  REQUIRE(res);
+
+  res = c.AddStudent("12345678", "Tanner F", "1", {});
+  REQUIRE(!res);
+
+}
+
+TEST_CASE("remove edge cases", "Edge") {
+
+  CampusCompass c;
+
+  bool res = c.AddStudent("12345678", "Tanner", "1", {});
+  REQUIRE(res);
+
+  res = c.RemoveStudent("12345677");
+  REQUIRE(!res);
+
+}
+
+TEST_CASE("dropClass edge cases", "Edge") {
+
+  CampusCompass c;
+
+  bool res = c.AddStudent("12345678", "Tanner", "1", {});
+  REQUIRE(res);
+
+  res = c.DropClass("12345678", "COP3502");
+  REQUIRE(!res);
+
+}
+
+TEST_CASE("Test add/remove student", "FUNCTION") {
+
+  CampusCompass c;
+  c.AddStudent("12345678", "Tanner", "1", {});
+
+  REQUIRE(c.PrintStudents()[0] == "Tanner");
+  REQUIRE(c.PrintStudents().size() == 1);
+
+  c.RemoveStudent("12345678");
+
+  REQUIRE(c.PrintStudents().empty());
+}
+
+TEST_CASE("Test drop class", "FUNCTION") {
+
+  CampusCompass c;
+
+  c.AddStudent("12345678", "Tanner", "1", vector<string>{"COP3530", "ENC3246"});
+
+  REQUIRE(c.GetClasses("12345678").size() == 2);
+  bool res = c.DropClass("12345678", "COP3530");
+  REQUIRE(res);
+  REQUIRE(c.GetClasses("12345678")[0] == "ENC3246");
+}
+
+TEST_CASE("Test replace class", "FUNCTION") {
+
+  CampusCompass c;
+
+  c.AddStudent("12345678", "Tanner", "1", vector<string>{"COP3530", "ENC3246"});
+
+  bool res = c.ReplaceClass("12345678", "COP3530", "ENC3246");
+  REQUIRE(!res);
+
+  res = c.ReplaceClass("12345678", "COP3530", "COP3502");
+  REQUIRE(res);
+  vector<string> classes = c.GetClasses("12345678");
+  REQUIRE(std::find(classes.begin(), classes.end() - 1, "COP3502") != classes.end());
+
+  REQUIRE(c.DropClass("12345678", "COP3502"));
+}
+
+TEST_CASE("Test remove class", "FUNCTION") {
+
+  CampusCompass c;
+
+  c.AddStudent("12345677", "Tanner", "1", vector<string>{"COP3530", "ENC3246"});
+  c.AddStudent("12345678", "Tanner", "1", vector<string>{"COP3530", "ENC3246"});
+  c.AddStudent("12345679", "Tanner", "1", vector<string>{"COP3530", "ENC3246"});
+
+  REQUIRE(c.RemoveClass("COP3530") == 3);
+  REQUIRE(c.GetClasses("12345678").size() == 1);
+  REQUIRE(c.RemoveClass("COP3502") == 0);
+}
+
+TEST_CASE("Test djikstras", "FUNCTION"){
+
+  CampusCompass c;
+
+  c.AddStudent("12345678", "tanner", "21", {"COP3502", "COP3503"});
+
+  c.ShortestEdges("12345678");
+  REQUIRE(true);
+}
+
+TEST_CASE("testing shortestEdges", "FUNCTION") {
+
+  CampusCompass c;
+
+  c.AddStudent("12345678", "Tanner", "21", {"PHY2048"});
+
+  REQUIRE(c.ShortestEdges("12345678")[0].second == 22);
+  cout << endl;
+
+  pair<int, int> test = {7, 49};
+  vector<pair<int, int>> testV = {test};
+  c.ToggleEdges(testV);
+
+  REQUIRE(c.ShortestEdges("12345678")[0].second == -1);
+  cout << endl;
+}
+
+TEST_CASE("testing student zone", "ignore") {
+// !! personal test case , not part of submission !!
+  CampusCompass c;
+
+  c.AddStudent("12345678", "Tanner", "21", {"PHY2048", "COP3502"});
+
+  c.StudentZone("12345678");
+  cout << endl;
+  REQUIRE(true);
+}*/
